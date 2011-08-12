@@ -61,6 +61,7 @@
 #define PARAM_QUERY		16
 #define DESCRIBE                17
 #define SHUTDOWN		18
+#define GET_TABLES             19
 #define LENGTH_INDICATOR_SIZE	4
 #define INT_VALUE		1
 #define STR_VALUE		2

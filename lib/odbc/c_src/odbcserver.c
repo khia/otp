@@ -417,6 +417,8 @@ static db_result_msg handle_db_request(byte *reqstring, db_state *state)
 	return db_param_query(args, state);
     case DESCRIBE:
 	return db_describe_table(args, state);
+	case GET_TABLES:
+	return db_get_tables(args, state);  	
     default:
 	DO_EXIT(EXIT_FAILURE); /* Should not happen */
     }  
@@ -932,6 +934,44 @@ static db_result_msg db_describe_table(byte *sql, db_state *state)
     return msg;
 }
 
+static db_result_msg db_get_tables(byte *sql, db_state *state)
+{
+    db_result_msg msg; 
+    diagnos diagnos;
+    
+    if (associated_result_set(state)) {
+       clean_state(state);
+    }
+    associated_result_set(state) = FALSE;
+
+    msg = encode_empty_message();
+    
+    if(!sql_success(SQLAllocHandle(SQL_HANDLE_STMT,
+                                  connection_handle(state),
+                                  &statement_handle(state))))
+       DO_EXIT(EXIT_ALLOC);
+    
+       if(!sql_success(SQLTables(statement_handle(state),
+                                                         (SQLCHAR*)SQL_ALL_CATALOGS,
+                                                 SQL_NTS, (SQLCHAR*)"",
+                                                         SQL_NTS, (SQLCHAR*)"",
+                                                 SQL_NTS, (SQLCHAR*)"", SQL_NTS ))) {
+               diagnos =  get_diagnos(SQL_HANDLE_STMT, statement_handle(state));
+        msg = encode_error_message(diagnos.error_msg); 
+               clean_state(state); 
+        return msg; 
+      }
+       msg = encode_value_list(SQLSMALLINT 1, state)
+   if (msg.length != 0) { /* An error has occurred */
+         ei_x_free(&(dynamic_buffer(state))); 
+               return msg;
+    } else {
+               msg.buffer = dynamic_buffer(state).buff;
+            msg.length = dynamic_buffer(state).index; 
+               msg.dyn_alloc = TRUE;
+                return msg;
+   }
+}
 
 /* ----------------- Encode/decode functions -----------------------------*/
 
