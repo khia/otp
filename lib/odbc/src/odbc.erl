@@ -105,7 +105,7 @@ stop() ->
 connect(ConnectionStr, Options) when is_list(ConnectionStr), is_list(Options) ->
     
     %% Spawn the erlang control process.
-    try  supervisor:start_child(odbc_sup, [[{client, self()}]]) of
+    try  supervisor:start_child(odbc_sup, [[{client, self()}] ++ Options]) of
 	 {ok, Pid} ->
 	    connect(Pid, ConnectionStr, Options);
 	 {error, Reason} ->
@@ -448,8 +448,9 @@ init(Args) ->
 			   {active, false}, {nodelay, true},
 			   {ip, loopback}]),
 
+    Dir = proplists:get_value(driver_dir, Args, ?SERVERDIR),
     %% Start the port program (a c program) that utilizes the odbc driver 
-    case os:find_executable(?SERVERPROG, ?SERVERDIR) of
+    case os:find_executable(?SERVERPROG, Dir) of
 	FileName when is_list(FileName)->
 	    Port  = open_port({spawn, FileName},
 			      [{packet, ?LENGTH_INDICATOR_SIZE}, binary,
